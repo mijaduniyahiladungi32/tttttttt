@@ -3,8 +3,8 @@ name: Run Python Script
 on:
   push:
     branches:
-      - main   # or your default branch
-  workflow_dispatch:  # allow manual run from GitHub UI
+      - main
+  workflow_dispatch:
 
 jobs:
   run-script:
@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'  # choose your Python version
+          python-version: '3.11'  # or '3.12' if you prefer latest
 
       - name: Install dependencies
         run: |
@@ -26,4 +26,4 @@ jobs:
 
       - name: Run Python script
         run: |
-          python test.py
+          python main.py
