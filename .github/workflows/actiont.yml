@@ -41,7 +41,7 @@ jobs:
       run: |
         cp NS_player.m3u ott_navigator.m3u target-repo/
         mkdir -p target-repo/data
-        cp data/api.json target-repo/data/
+        cp script_api/data.json target-repo/data/
 
     - name: Commit and push changes
       run: |
