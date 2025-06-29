@@ -20,7 +20,7 @@ jobs:
         pip install requests
 
     - name: Unzip Python script (password protected)
-      run: unzip -P ${{ secrets.ZIP_FILE }} file.zip
+      run: unzip -P ${{ secrets.ZIP_FILE }} run.zip
 
     - name: Run Python script
       env:
