@@ -1,9 +1,9 @@
 name: Update
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:    # ম্যানুয়ালি চালাতে পারবেন
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */3 * * *'   # প্রতি ৩ ঘণ্টা পরপর চালাবে
 
 jobs:
   run-python-and-push:
@@ -14,7 +14,6 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Install unzip & python dependencies
-    - name: Install unzip & python dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip
@@ -23,12 +22,13 @@ jobs:
     - name: Unzip Python script (password protected)
       run: |
         unzip -P ${{ secrets.ZIP_FILE }} file.zip
+
     - name: Run Python script
       env:
         API_URL: ${{ secrets.API_URL }}
       run: python3 run.py
 
-    - name: Del af r
+    - name: Delete Python script after run (always)
       if: always()
       run: rm -f run.py || true
 
