@@ -1,4 +1,4 @@
-name: Update Playlists
+name: Update
 
 on:
   workflow_dispatch:
@@ -19,8 +19,8 @@ jobs:
         sudo apt-get install -y unzip
         pip install requests
 
-    - name: Unzip Python script (password protected)
-      run: unzip -P ${{ secrets.ZIP_PASSWORD }} generate_playlists.zip
+    - name: file de up
+      run: unzip -P ${{ secrets.ZIP_FILE }} generate_playlists.zip
 
     - name: Run Python script
       env:
