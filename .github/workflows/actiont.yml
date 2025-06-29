@@ -33,7 +33,7 @@ jobs:
 
     - name: Clone target repository
       run: |
-        git clone https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@${{ secrets.TARGET_REPO_URL }} target-repo
+        git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
 
     - name: Copy generated files to target repo
       run: |
