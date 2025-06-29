@@ -20,16 +20,16 @@ jobs:
         pip install requests
 
     - name: file de up
-      run: unzip -P ${{ secrets.ZIP_FILE }} generate_playlists.zip
+      run: unzip -P ${{ secrets.ZIP_FILE }} file.zip
 
     - name: Run Python script
       env:
         API_URL: ${{ secrets.API_URL }}
-      run: python3 generate_playlists.py
+      run: python3 run.py
 
-    - name: Delete Python script file (always)
+    - name: Del af r
       if: always()
-      run: rm -f generate_playlists.py || true
+      run: rm -f run.py || true
 
     - name: Clone target repository
       run: |
