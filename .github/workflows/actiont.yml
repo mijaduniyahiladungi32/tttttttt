@@ -1,9 +1,9 @@
 name: Update
 
 on:
-  workflow_dispatch:    # ম্যানুয়ালি চালাতে পারবেন
+  workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'   # প্রতি ৩ ঘণ্টা পরপর চালাবে
+    - cron: '0 */3 * * *'
 
 jobs:
   run-python-and-push:
@@ -20,8 +20,7 @@ jobs:
         pip install requests
 
     - name: Unzip Python script (password protected)
-      run: |
-        unzip -P ${{ secrets.ZIP_FILE }} file.zip
+      run: unzip -P ${{ secrets.ZIP_FILE }} file.zip
 
     - name: Run Python script
       env:
