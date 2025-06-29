@@ -40,7 +40,7 @@ jobs:
     - name: Copy generated files to target repo
       run: |
         cp NS_player.m3u ott_navigator.m3u target-repo/
-        mkdir -p target-repo/data
+        mkdir -p target-repo/script_api
         cp script_api/data.json target-repo/data/
 
     - name: Commit and push changes
