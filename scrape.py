@@ -54,7 +54,7 @@ try:
     logger.info("Page body loaded successfully")
 
     # Wait additional time to capture all network requests
-    time.sleep(5)
+    time.sleep(10)  # Increased to ensure more network requests are captured
 
     # Retrieve performance logs
     logs = driver.get_log('performance')
@@ -65,55 +65,8 @@ try:
         try:
             message = json.loads(log['message'])
             event = message['message']
-            if 'Network.requestWillBeSent' in event['method'] or 'Network.responseReceived' in event['method']:
+            # Only process Network.requestWillBeSent and Network.responseReceived events
+            if event['method'] in ['Network.requestWillBeSent', 'Network.responseReceived']:
                 network_data.append(event)
-        except json.JSONDecodeError:
-            logger.warning(f"Invalid JSON in log entry: {log}")
-            continue
-
-    # Process network data into a structured format
-    processed_data = []
-    for event in network_data:
-        if 'Network.requestWillBeSent' in event['method']:
-            request = event['params']['request']
-            processed_data.append({
-                "type": "request",
-                "url": request.get('url', ''),
-                "method": request.get('method', ''),
-                "headers": request.get('headers', {}),
-                "timestamp": event['params'].get('timestamp', 0),
-                "requestId": event['params']['requestId']
-            })
-        elif 'Network.responseReceived' in event['method']:
-            response = event['params']['response']
-            processed_data.append({
-                "type": "response",
-                "url": response.get('url', ''),
-                "status": response.get('status', 0),
-                "statusText": response.get('statusText', ''),
-                "headers": response.get('headers', {}),
-                "mimeType": response.get('mimeType', ''),
-                "timestamp": event['params'].get('timestamp', 0),
-                "requestId": event['params']['requestId']
-            })
-
-    # Save to output.json
-    with open("output.json", "w", encoding="utf-8") as f:
-        json.dump(processed_data, f, indent=4, ensure_ascii=False)
-    logger.info("Network data saved to output.json")
-
-except Exception as e:
-    logger.error(f"An error occurred: {str(e)}")
-    # Save partial data if error occurs
-    with open("output.json", "w", encoding="utf-8") as f:
-        json.dump({"error": str(e), "partial_data": network_data}, f, indent=4, ensure_ascii=False)
-    logger.info("Partial data saved to output.json")
-
-finally:
-    # Disable Network domain and close browser
-    try:
-        driver.execute_cdp_cmd('Network.disable', {})
-        driver.quit()
-        logger.info("Browser closed")
-    except Exception as e:
-        logger.error(f"Error closing browser: {str(e)}")
+            else:
+                logger.debug(f"Skipping event
