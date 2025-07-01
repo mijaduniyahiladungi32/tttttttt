@@ -12,20 +12,16 @@ options = webdriver.ChromeOptions()
 options.add_argument('--headless')
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
-options.add_experimental_option('prefs', {'intl.accept_languages': 'en,en_US'})
 options.add_argument('--disable-blink-features=AutomationControlled')
-
-# Enable Chrome DevTools Protocol (CDP) for capturing network activity
-capabilities = {
-    "goog:loggingPrefs": {"performance": "ALL"}  # Enable performance logs
-}
+options.add_experimental_option('excludeSwitches', ['enable-logging'])
+options.add_experimental_option('perfLoggingPrefs', {
+    'enableNetwork': True,
+    'enablePage': True
+})
+options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
 
 # Initialize the WebDriver
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options,
-    desired_capabilities=capabilities
-)
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 # Data structure to store network requests
 network_data = []
