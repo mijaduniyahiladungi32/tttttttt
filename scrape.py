@@ -6,6 +6,11 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import json
 import time
+import logging
+
+# Set up logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Set up Chrome options for headless mode
 options = webdriver.ChromeOptions()
@@ -21,7 +26,14 @@ options.add_experimental_option('perfLoggingPrefs', {
 options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
 
 # Initialize the WebDriver
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+try:
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    logger.info("WebDriver initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize WebDriver: {str(e)}")
+    with open("output.json", "w", encoding="utf-8") as f:
+        json.dump({"error": f"WebDriver initialization failed: {str(e)}", "data": []}, f, indent=4)
+    exit(1)
 
 # Data structure to store network requests
 network_data = []
@@ -29,29 +41,37 @@ network_data = []
 try:
     # Enable Network domain in Chrome DevTools Protocol
     driver.execute_cdp_cmd('Network.enable', {})
-
-    # Capture network events
-    def log_network_event(event):
-        if 'Network.requestWillBeSent' in event['method'] or 'Network.responseReceived' in event['method']:
-            network_data.append(event)
-
-    # Subscribe to performance logs
-    driver.on_log('performance', log_network_event)
+    logger.info("Network domain enabled")
 
     # Navigate to the target URL
     target_url = "https://daddylivehd1.my/live/stream-341.php"
     driver.get(target_url)
-    print(f"Successfully opened {target_url}")
+    logger.info(f"Successfully opened {target_url}")
 
     # Wait for the page to fully load
     wait = WebDriverWait(driver, 15)
     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-    print("Page body loaded successfully")
+    logger.info("Page body loaded successfully")
 
     # Wait additional time to capture all network requests
     time.sleep(5)
 
-    # Process network data
+    # Retrieve performance logs
+    logs = driver.get_log('performance')
+    logger.info(f"Captured {len(logs)} performance logs")
+
+    # Process network logs
+    for log in logs:
+        try:
+            message = json.loads(log['message'])
+            event = message['message']
+            if 'Network.requestWillBeSent' in event['method'] or 'Network.responseReceived' in event['method']:
+                network_data.append(event)
+        except json.JSONDecodeError:
+            logger.warning(f"Invalid JSON in log entry: {log}")
+            continue
+
+    # Process network data into a structured format
     processed_data = []
     for event in network_data:
         if 'Network.requestWillBeSent' in event['method']:
@@ -80,17 +100,20 @@ try:
     # Save to output.json
     with open("output.json", "w", encoding="utf-8") as f:
         json.dump(processed_data, f, indent=4, ensure_ascii=False)
-    print("Network data saved to output.json")
+    logger.info("Network data saved to output.json")
 
 except Exception as e:
-    print(f"An error occurred: {str(e)}")
+    logger.error(f"An error occurred: {str(e)}")
     # Save partial data if error occurs
     with open("output.json", "w", encoding="utf-8") as f:
         json.dump({"error": str(e), "partial_data": network_data}, f, indent=4, ensure_ascii=False)
-    print("Partial data saved to output.json")
+    logger.info("Partial data saved to output.json")
 
 finally:
     # Disable Network domain and close browser
-    driver.execute_cdp_cmd('Network.disable', {})
-    driver.quit()
-    print("Browser closed")
+    try:
+        driver.execute_cdp_cmd('Network.disable', {})
+        driver.quit()
+        logger.info("Browser closed")
+    except Exception as e:
+        logger.error(f"Error closing browser: {str(e)}")
