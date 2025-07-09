@@ -43,7 +43,7 @@ jobs:
       # Run the Selenium script
       - name: Run Selenium script
         run: |
-          python scrape.py
+          python p.py
 
       # Upload output.json as an artifact
       - name: Upload output.json
