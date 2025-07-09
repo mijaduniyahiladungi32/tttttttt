@@ -13,7 +13,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install unzip, zip & python dependencies
+    - name: Install unzip, zip & Python dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip zip
@@ -22,19 +22,17 @@ jobs:
     - name: Create temp directory for unzip
       run: mkdir temp_run
 
-    - name: Unzip password protected v.zip to temp folder
+    - name: Unzip password protected v2.zip to temp folder
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
         unzip -P "${ZIP_FILE}" v2.zip -d temp_run
 
     - name: Run Python script inside temp folder
-      env:
-        API_URL: ${{ secrets.API_URL }}
       working-directory: temp_run
       run: python3 run.py
 
-    - name: Zip updated files back to run.zip with password
+    - name: Zip updated files back to v2.zip with password
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
@@ -50,9 +48,9 @@ jobs:
 
     - name: Copy generated files to target repo
       run: |
-        cp temp_run/NS_player.json ott_navigator.m3u target-repo/ || echo "Skipping NS_player.json copy if missing"
+        cp NS_player.json ott_navigator.m3u target-repo/ || echo "Skipping NS_player.json copy if missing"
         mkdir -p target-repo/script_api
-        cp temp_run/script_api/data.json target-repo/script_api/ || echo "Skipping data.json copy if missing"
+        cp script_api/data.json target-repo/script_api/ || echo "Skipping data.json copy if missing"
 
     - name: Commit and push changes
       run: |
