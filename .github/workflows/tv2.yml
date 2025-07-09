@@ -19,14 +19,13 @@ jobs:
         sudo apt-get install -y unzip zip
         pip install requests[socks]
 
-    - name: Create temp directory for unzip
+    - name: Create temp directory
       run: mkdir temp_run
 
     - name: Unzip password protected v2.zip to temp folder
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: |
-        unzip -P "${ZIP_FILE}" v2.zip -d temp_run
+      run: unzip -P "${ZIP_FILE}" v2.zip -d temp_run
 
     - name: Run Python script inside temp folder
       working-directory: temp_run
@@ -48,9 +47,9 @@ jobs:
 
     - name: Copy generated files to target repo
       run: |
-        cp NS_player.json ott_navigator.m3u target-repo/ || echo "Skipping NS_player.json copy if missing"
+        cp NS_player.json ott_navigator.m3u target-repo/ || echo "Skip copy if missing"
         mkdir -p target-repo/script_api
-        cp script_api/data.json target-repo/script_api/ || echo "Skipping data.json copy if missing"
+        cp script_api/data.json target-repo/script_api/ || echo "Skip copy if missing"
 
     - name: Commit and push changes
       run: |
