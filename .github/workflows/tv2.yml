@@ -3,17 +3,17 @@ name: Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'   # প্রতি ৩ ঘণ্টা অন্তর রান করবে
+    - cron: '0 */3 * * *'   # প্রতি ৩ ঘণ্টা অন্তর রান
 
 jobs:
   run-python-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout private repo (zip রাখা)
+    - name: Checkout private repo (zip ফাইল যেখানে)
       uses: actions/checkout@v3
 
-    - name: Install unzip, zip & Python dependencies
+    - name: Install unzip, zip & Python deps
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip zip
@@ -41,14 +41,22 @@ jobs:
         cd temp_run
         zip -r -P "${ZIP_FILE}" ../v2.zip *
 
-    - name: Clean up temp folder
-      run: rm -rf temp_run
+    ### ✅ Step 1: Commit & push updated v2.zip to private repo
+    - name: Commit & push updated v2.zip to private repo
+      run: |
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add v2.zip
+        git commit -m "Update v2.zip [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git push
 
+    ### ✅ Step 2: Clone target public repo
     - name: Clone target public repo
       run: |
         git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
 
-    - name: Copy generated list files to target repo
+    ### ✅ Step 3: Copy playlist files to target repo
+    - name: Copy list files to target repo
       run: |
         cp temp_run/NS_player.json temp_run/ott_navigator.m3u target-repo/ || echo "Skip if missing"
         mkdir -p target-repo/script_api
@@ -59,11 +67,16 @@ jobs:
         cd target-repo
         git status
 
-    - name: Commit & push changes to target repo
+    ### ✅ Step 4: Commit & push to target repo
+    - name: Commit & push list files to target repo
       run: |
         cd target-repo
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add .
-        git commit -m "Update list files and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git commit -m "Update playlist & api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
         git push
+
+    ### ✅ Step 5: Clean up temp folder
+    - name: Clean up temp folder
+      run: rm -rf temp_run
