@@ -3,62 +3,67 @@ name: Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'  # প্রতি ৩ ঘণ্টায় চালানো হবে
+    - cron: '0 */3 * * *'   # প্রতি ৩ ঘণ্টা অন্তর রান করবে
 
 jobs:
   run-python-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
+    - name: Checkout private repo (zip রাখা)
       uses: actions/checkout@v3
 
-    - name: Install unzip, zip & python dependencies
+    - name: Install unzip, zip & Python dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip zip
         pip install requests[socks]
 
-    - name: Create temp directory
+    - name: Create temp folder
       run: mkdir temp_run
 
-    - name: Unzip password protected v2.zip into temp_run
+    - name: Unzip password protected v2.zip to temp folder
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: unzip -P "${ZIP_FILE}" v2.zip -d temp_run
 
-    - name: Run Python script inside temp_run
+    - name: Run Python script inside temp folder
       working-directory: temp_run
       run: python3 run.py
 
-    - name: Zip updated files back to v2.zip with password
+    - name: Show generated files (debug)
+      run: ls -R temp_run
+
+    - name: Overwrite v2.zip with updated files
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
         cd temp_run
         zip -r -P "${ZIP_FILE}" ../v2.zip *
 
-    - name: Clean temp folder
+    - name: Clean up temp folder
       run: rm -rf temp_run
 
-    - name: Clone target repo
-      env:
-        GET_API_TOKEN: ${{ secrets.GET_API_TOKEN }}
-        GET_URL: ${{ secrets.GET_URL }}
+    - name: Clone target public repo
       run: |
-        git clone https://x-access-token:${GET_API_TOKEN}@${GET_URL} target-repo
+        git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
 
-    - name: Copy generated files to target repo
+    - name: Copy generated list files to target repo
       run: |
-        cp NS_player.json ott_navigator.m3u target-repo/ || echo "Skip if missing"
+        cp temp_run/NS_player.json temp_run/ott_navigator.m3u target-repo/ || echo "Skip if missing"
         mkdir -p target-repo/script_api
-        cp script_api/data.json target-repo/script_api/ || echo "Skip if missing"
+        cp temp_run/script_api/data.json target-repo/script_api/ || echo "Skip if missing"
 
-    - name: Commit and push to target repo
+    - name: Show git status before commit (debug)
+      run: |
+        cd target-repo
+        git status
+
+    - name: Commit & push changes to target repo
       run: |
         cd target-repo
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add .
-        git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git commit -m "Update list files and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
         git push
