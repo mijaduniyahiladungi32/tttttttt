@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout current repo
       uses: actions/checkout@v3
 
     - name: Install unzip, zip & Python dependencies
@@ -31,7 +31,7 @@ jobs:
       working-directory: temp_run
       run: python3 run.py
 
-    - name: Zip updated files back to v2.zip with password
+    - name: Zip updated files back to v2.zip with password (overwrite in current repo)
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
@@ -45,17 +45,17 @@ jobs:
       run: |
         git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
 
-    - name: Copy generated files to target repo
+    - name: Copy updated list files to target repo
       run: |
         cp NS_player.json ott_navigator.m3u target-repo/ || echo "Skip copy if missing"
         mkdir -p target-repo/script_api
         cp script_api/data.json target-repo/script_api/ || echo "Skip copy if missing"
 
-    - name: Commit and push changes
+    - name: Commit and push changes to target repo
       run: |
         cd target-repo
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add .
-        git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git commit -m "Update playlists and data.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
         git push
