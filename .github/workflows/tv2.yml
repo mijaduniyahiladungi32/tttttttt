@@ -13,49 +13,52 @@ jobs:
     - name: Checkout current repo
       uses: actions/checkout@v3
 
-    - name: Install unzip, zip & Python dependencies
+    - name: Install unzip, zip & Python deps
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip zip
         pip install requests[socks]
 
-    - name: Create temp directory
+    - name: Create temp folder
       run: mkdir temp_run
 
-    - name: Unzip password protected v2.zip to temp folder
+    - name: Unzip v2.zip to temp_run
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: unzip -P "${ZIP_FILE}" v2.zip -d temp_run
 
-    - name: Run Python script inside temp folder
+    - name: Run Python script
       working-directory: temp_run
       run: python3 run.py
 
-    - name: Zip updated files back to v2.zip with password (overwrite in current repo)
+    - name: Show files created
+      run: ls -R temp_run
+
+    - name: Update v2.zip
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
         cd temp_run
         zip -r -P "${ZIP_FILE}" ../v2.zip *
 
-    - name: Clean up temp folder
-      run: rm -rf temp_run
+    - name: Show updated v2.zip info
+      run: unzip -l v2.zip
 
-    - name: Clone target repository
+    - name: Clone target repo
       run: |
         git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
 
-    - name: Copy updated list files to target repo
+    - name: Copy list files to target repo
       run: |
-        cp NS_player.json ott_navigator.m3u target-repo/ || echo "Skip copy if missing"
+        cp temp_run/NS_player.json temp_run/ott_navigator.m3u target-repo/ || echo "Skip if missing"
         mkdir -p target-repo/script_api
-        cp script_api/data.json target-repo/script_api/ || echo "Skip copy if missing"
+        cp temp_run/script_api/data.json target-repo/script_api/ || echo "Skip if missing"
 
-    - name: Commit and push changes to target repo
+    - name: Commit & push
       run: |
         cd target-repo
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add .
-        git commit -m "Update playlists and data.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git commit -m "Update list files [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
         git push
