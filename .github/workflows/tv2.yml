@@ -22,11 +22,11 @@ jobs:
     - name: Create temp directory for unzip
       run: mkdir temp_run
 
-    - name: Unzip password protected run.zip to temp folder
+    - name: Unzip password protected v.zip to temp folder
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
-        unzip -P "${ZIP_FILE}" run.zip -d temp_run
+        unzip -P "${ZIP_FILE}" v2.zip -d temp_run
 
     - name: Run Python script inside temp folder
       env:
@@ -39,7 +39,7 @@ jobs:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: |
         cd temp_run
-        zip -r -P "${ZIP_FILE}" ../run.zip *
+        zip -r -P "${ZIP_FILE}" ../v2.zip *
 
     - name: Clean up temp folder
       run: rm -rf temp_run
