@@ -1,82 +1,90 @@
-name: Update
+name: Update ZIP and Playlists
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'   # প্রতি ৩ ঘণ্টা অন্তর রান
+    - cron: '0 */3 * * *'  # Runs every 3 hours
 
 jobs:
-  run-python-and-push:
+  update-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout private repo (zip ফাইল যেখানে)
-      uses: actions/checkout@v3
+    # ======================
+    # 1. SETUP PRIVATE REPO
+    # ======================
+    - name: Checkout private repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        persist-credentials: true  # Crucial for later push
 
-    - name: Install unzip, zip & Python deps
+    # ======================
+    # 2. PROCESS ZIP FILE
+    # ======================
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip zip
         pip install requests[socks]
 
-    - name: Create temp folder
-      run: mkdir temp_run
+    - name: Create temp workspace
+      run: mkdir -p temp_workspace
 
-    - name: Unzip password protected v2.zip to temp folder
+    - name: Unzip protected file
       env:
-        ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -P "${ZIP_FILE}" v2.zip -d temp_run
+        ZIP_PASSWORD: ${{ secrets.ZIP_PASSWORD }}
+      run: |
+        unzip -P "${ZIP_PASSWORD}" v2.zip -d temp_workspace || echo "Unzip may have had warnings"
 
-    - name: Run Python script inside temp folder
-      working-directory: temp_run
+    - name: Run processing script
+      working-directory: temp_workspace
       run: python3 run.py
 
-    - name: Show generated files (debug)
-      run: ls -R temp_run
-
-    - name: Overwrite v2.zip with updated files
+    - name: Repackage updated files
       env:
-        ZIP_FILE: ${{ secrets.ZIP_FILE }}
+        ZIP_PASSWORD: ${{ secrets.ZIP_PASSWORD }}
       run: |
-        cd temp_run
-        zip -r -P "${ZIP_FILE}" ../v2.zip *
+        cd temp_workspace
+        rm -f ../v2.zip  # Remove old zip
+        zip -r -P "${ZIP_PASSWORD}" ../v2.zip *
 
-    ### ✅ Step 1: Commit & push updated v2.zip to private repo
-    - name: Commit & push updated v2.zip to private repo
+    # ======================
+    # 3. UPDATE PRIVATE REPO
+    # ======================
+    - name: Commit ZIP to private repo
       run: |
-        git config user.name "GitHub Action"
-        git config user.email "action@github.com"
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
         git add v2.zip
-        git commit -m "Update v2.zip [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
-        git push
+        git diff-index --quiet HEAD || git commit -m "Auto-update v2.zip [$(date '+%Y-%m-%d %H:%M:%S')]"
+        git push origin HEAD:${{ github.ref }}
 
-    ### ✅ Step 2: Clone target public repo
-    - name: Clone target public repo
+    # ======================
+    # 4. UPDATE PUBLIC REPO
+    # ======================
+    - name: Clone public repo
       run: |
-        git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
+        git clone https://x-access-token:${{ secrets.PUBLIC_REPO_TOKEN }}@github.com/${{ secrets.PUBLIC_REPO_PATH }}.git public_repo
 
-    ### ✅ Step 3: Copy playlist files to target repo
-    - name: Copy list files to target repo
+    - name: Sync playlist files
       run: |
-        cp temp_run/NS_player.json temp_run/ott_navigator.m3u target-repo/ || echo "Skip if missing"
-        mkdir -p target-repo/script_api
-        cp temp_run/script_api/data.json target-repo/script_api/ || echo "Skip if missing"
+        mkdir -p public_repo/script_api
+        cp -v temp_workspace/NS_player.json public_repo/ || echo "NS_player.json not found"
+        cp -v temp_workspace/ott_navigator.m3u public_repo/ || echo "ott_navigator.m3u not found"
+        cp -v temp_workspace/script_api/data.json public_repo/script_api/ || echo "data.json not found"
 
-    - name: Show git status before commit (debug)
+    - name: Commit to public repo
+      working-directory: public_repo
       run: |
-        cd target-repo
-        git status
-
-    ### ✅ Step 4: Commit & push to target repo
-    - name: Commit & push list files to target repo
-      run: |
-        cd target-repo
-        git config user.name "GitHub Action"
-        git config user.email "action@github.com"
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
         git add .
-        git commit -m "Update playlist & api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git diff-index --quiet HEAD || git commit -m "Auto-update playlists [$(date '+%Y-%m-%d %H:%M:%S')]"
         git push
 
-    ### ✅ Step 5: Clean up temp folder
-    - name: Clean up temp folder
-      run: rm -rf temp_run
+    # ======================
+    # 5. CLEANUP
+    # ======================
+    - name: Remove temp files
+      run: rm -rf temp_workspace public_repo
