@@ -22,7 +22,7 @@ jobs:
     - name: Un File
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -P "${ZIP_FILE}" run.zip
+      run: unzip -P "${ZIP_FILE}" v2.zip
 
     - name: Run Python script
       env:
