@@ -3,7 +3,7 @@ name: Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */21 * * *'
 
 jobs:
   run-python-and-push:
