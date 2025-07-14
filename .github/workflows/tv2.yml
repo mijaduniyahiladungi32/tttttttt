@@ -1,90 +1,53 @@
-name: Update ZIP and Playlists
+name: Update
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'  # Runs every 3 hours
+    - cron: '0 */4 * * *'
 
 jobs:
-  update-and-push:
+  run-python-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    # ======================
-    # 1. SETUP PRIVATE REPO
-    # ======================
-    - name: Checkout private repo
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.PRIVATE_REPO_TOKEN }}
-        persist-credentials: true  # Crucial for later push
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    # ======================
-    # 2. PROCESS ZIP FILE
-    # ======================
-    - name: Install dependencies
+    - name: Install unzip & python dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y unzip zip
-        pip install requests[socks]
+        sudo apt-get install -y unzip
+        pip install requests
 
-    - name: Create temp workspace
-      run: mkdir -p temp_workspace
-
-    - name: Unzip protected file
+    - name: Un File
       env:
-        ZIP_PASSWORD: ${{ secrets.ZIP_PASSWORD }}
-      run: |
-        unzip -P "${ZIP_PASSWORD}" v2.zip -d temp_workspace || echo "Unzip may have had warnings"
+        ZIP_FILE: ${{ secrets.ZIP_FILE }}
+      run: unzip -P "${ZIP_FILE}" run.zip
 
-    - name: Run processing script
-      working-directory: temp_workspace
+    - name: Run Python script
+      env:
+        API_URL: ${{ secrets.API_URL }}
       run: python3 run.py
 
-    - name: Repackage updated files
-      env:
-        ZIP_PASSWORD: ${{ secrets.ZIP_PASSWORD }}
-      run: |
-        cd temp_workspace
-        rm -f ../v2.zip  # Remove old zip
-        zip -r -P "${ZIP_PASSWORD}" ../v2.zip *
+    - name: Delete Python script after run (always)
+      if: always()
+      run: rm -f run.py || true
 
-    # ======================
-    # 3. UPDATE PRIVATE REPO
-    # ======================
-    - name: Commit ZIP to private repo
+    - name: Clone target repository
       run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add v2.zip
-        git diff-index --quiet HEAD || git commit -m "Auto-update v2.zip [$(date '+%Y-%m-%d %H:%M:%S')]"
-        git push origin HEAD:${{ github.ref }}
+        git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
 
-    # ======================
-    # 4. UPDATE PUBLIC REPO
-    # ======================
-    - name: Clone public repo
+    - name: Copy generated files to target repo
       run: |
-        git clone https://x-access-token:${{ secrets.PUBLIC_REPO_TOKEN }}@github.com/${{ secrets.PUBLIC_REPO_PATH }}.git public_repo
+        cp NS_player.m3u ott_navigator.m3u target-repo/
+        mkdir -p target-repo/script_api
+        cp script_api/data.json target-repo/script_api/
 
-    - name: Sync playlist files
+    - name: Commit and push changes
       run: |
-        mkdir -p public_repo/script_api
-        cp -v temp_workspace/NS_player.json public_repo/ || echo "NS_player.json not found"
-        cp -v temp_workspace/ott_navigator.m3u public_repo/ || echo "ott_navigator.m3u not found"
-        cp -v temp_workspace/script_api/data.json public_repo/script_api/ || echo "data.json not found"
-
-    - name: Commit to public repo
-      working-directory: public_repo
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
+        cd target-repo
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
         git add .
-        git diff-index --quiet HEAD || git commit -m "Auto-update playlists [$(date '+%Y-%m-%d %H:%M:%S')]"
+        git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
         git push
-
-    # ======================
-    # 5. CLEANUP
-    # ======================
-    - name: Remove temp files
-      run: rm -rf temp_workspace public_repo
