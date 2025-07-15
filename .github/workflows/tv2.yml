@@ -16,21 +16,34 @@ jobs:
     - name: Install unzip & python dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y unzip
+        sudo apt-get install -y unzip zip
         pip install requests
         pip install "requests[socks]"
 
-    - name: Unzip file
+    - name: Unzip main file
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -P "${ZIP_FILE}" v2.zip
+      run: unzip -P "${ZIP_FILE}" runvbk.zip
 
     - name: Run Python script
       run: python3 run.py
 
-    - name: Delete Python script after run (always)
+    - name: Zip files
+      env:
+        ZIP_PASSWORD: ${{ secrets.ZIP_FILE }}
+      run: zip -P "${ZIP_FILE}" v2.zip run.py tokenbd1.json
+
+    - name: Cleanup Files
       if: always()
-      run: rm -f run.py || true
+      run: rm -f run.py tokenbd1.json
+
+    - name: Commit and push v2.zip to same repo
+      run: |
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add v2.zip
+        git commit -m "Add v2.zip [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git push
 
     - name: Clone target repository
       run: |
@@ -42,7 +55,7 @@ jobs:
         mkdir -p target-repo/script_api
         cp script_api/data.json target-repo/script_api/
 
-    - name: Commit and push changes
+    - name: Commit and push changes to target repo
       run: |
         cd target-repo
         git config user.name "GitHub Action"
