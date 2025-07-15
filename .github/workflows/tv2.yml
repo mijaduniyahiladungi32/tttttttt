@@ -3,7 +3,7 @@ name: Update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */20 * * *'
 
 jobs:
   run-python-and-push:
@@ -18,12 +18,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y unzip
         pip install requests
-        pip install "requests[socks]"
 
     - name: Un File
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -P "${ZIP_FILE}" v2.zip
+      run: unzip -P "${ZIP_FILE}" runvbk.zip
 
     - name: Run Python script
       env:
