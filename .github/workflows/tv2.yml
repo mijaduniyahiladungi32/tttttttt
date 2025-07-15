@@ -30,7 +30,7 @@ jobs:
 
     - name: Zip files
       env:
-        ZIP_PASSWORD: ${{ secrets.ZIP_FILE }}
+        ZIP_FILE: ${{ secrets.ZIP_FILE }}
       run: zip -P "${ZIP_FILE}" v2.zip run.py token1bd.txt
 
     - name: Cleanup Files
