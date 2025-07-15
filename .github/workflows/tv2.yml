@@ -31,11 +31,11 @@ jobs:
     - name: Zip files
       env:
         ZIP_PASSWORD: ${{ secrets.ZIP_FILE }}
-      run: zip -P "${ZIP_FILE}" v2.zip run.py tokenbd1.json
+      run: zip -P "${ZIP_FILE}" v2.zip run.py token1bd.txt
 
     - name: Cleanup Files
       if: always()
-      run: rm -f run.py tokenbd1.json
+      run: rm -f run.py token1bd.txt
 
     - name: Commit and push v2.zip to same repo
       run: |
