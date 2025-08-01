@@ -18,7 +18,7 @@ with sync_playwright() as p:
 
     page.on('request', log_request)
 
-    page.goto('https://daddylivehd1.my/live/stream-341.php')
+    page.goto('https://tv247.us/watch/fox-sports-1-free-stream/')
     page.wait_for_timeout(5000)
 
     browser.close()
