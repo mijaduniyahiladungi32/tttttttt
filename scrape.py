@@ -44,7 +44,7 @@ try:
     logger.info("Network domain enabled")
 
     # Navigate to the target URL
-    target_url = "https://daddylivehd1.my/live/stream-341.php"
+    target_url = "https://tv247.us/watch/fox-sports-1-free-stream/"
     driver.get(target_url)
     logger.info(f"Successfully opened {target_url}")
 
