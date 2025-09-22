@@ -23,7 +23,7 @@ jobs:
     - name: Unzip main file
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -P "${ZIP_FILE}" runvbk.zip
+      run: unzip -P "${ZIP_FILE}" v2.zip
 
     - name: Run Python script
       run: python3 run.py
