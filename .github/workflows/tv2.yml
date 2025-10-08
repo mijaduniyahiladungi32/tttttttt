@@ -1,0 +1,53 @@
+name: Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */3 * * *'
+
+jobs:
+  run-python-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code (source repo)
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip zip python3-pip
+        pip install requests "requests[socks]"
+
+    - name: Create temporary folder
+      run: mkdir tmp_folder
+
+    - name: Unzip main file
+      env:
+        ZIP_FILE: ${{ secrets.ZIP_FILE }}
+      run: unzip -o -P "$ZIP_FILE" code.zip -d tmp_folder
+
+    - name: Run Python script
+      run: python3 tmp_folder/code.py
+
+    - name: Cleanup temporary folder
+      if: always()
+      run: rm -rf tmp_folder
+
+    - name: Clone target repository
+      run: git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
+
+    - name: Copy generated files to target repo
+      run: |
+        cp *.m3u target-repo/
+        mkdir -p target-repo/script_api
+        cp script_api/data.json target-repo/script_api/
+
+    - name: Commit and push changes
+      run: |
+        cd target-repo
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add .
+        git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+        git push
