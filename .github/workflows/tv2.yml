@@ -25,10 +25,10 @@ jobs:
     - name: Unzip main file
       env:
         ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -o -P "$ZIP_FILE" code.zip -d tmp_folder
+      run: unzip -o -P "$ZIP_FILE" 2pm.zip -d tmp_folder
 
     - name: Run Python script
-      run: python3 tmp_folder/code.py
+      run: python3 tmp_folder/2pm.py
 
     - name: Cleanup temporary folder
       if: always()
