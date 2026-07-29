@@ -1,5 +1,5 @@
 name: Update
-
+push
 on:
   workflow_dispatch:
   schedule:
@@ -10,44 +10,67 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code (source repo)
-      uses: actions/checkout@v3
+      - name: Checkout source repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip zip python3-pip
-        pip install requests "requests[socks]"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip zip python3-pip
+          pip install requests "requests[socks]"
 
-    - name: Create temporary folder
-      run: mkdir tmp_folder
+      - name: Create temporary folder
+        run: mkdir -p 2pm
 
-    - name: Unzip main file
-      env:
-        ZIP_FILE: ${{ secrets.ZIP_FILE }}
-      run: unzip -o -P "$ZIP_FILE" 2pm.zip -d tmp_folder
+      - name: Unzip main file
+        env:
+          ZIP_FILE: ${{ secrets.ZIP_FILE }}
+        run: |
+          unzip -o -P "$ZIP_FILE" 2pm.zip -d 2pm
 
-    - name: Run Python script
-      run: python3 tmp_folder/2pm.py
+      - name: Run Python script
+        run: python3 2pm/2pm.py
 
-    - name: Cleanup temporary folder
-      if: always()
-      run: rm -rf tmp_folder
+      - name: Repack ZIP
+        env:
+          ZIP_FILE: ${{ secrets.ZIP_FILE }}
+        run: |
+          rm -f 2pm.zip
+          cd 2pm
+          zip -r -P "$ZIP_FILE" ../2pm.zip .
+          cd ..
 
-    - name: Clone target repository
-      run: git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
+      - name: Commit updated ZIP to source repository
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add 2pm.zip
+          git commit -m "Update protected ZIP [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No ZIP changes"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
 
-    - name: Copy generated files to target repo
-      run: |
-        cp *.m3u target-repo/
-        mkdir -p target-repo/script_api
-        cp script_api/data.json target-repo/script_api/
+      - name: Cleanup temporary folder
+        if: always()
+        run: rm -rf 2pm
 
-    - name: Commit and push changes
-      run: |
-        cd target-repo
-        git config user.name "GitHub Action"
-        git config user.email "action@github.com"
-        git add .
-        git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
-        git push
+      - name: Clone target repository
+        run: |
+          git clone https://x-access-token:${{ secrets.GET_API_TOKEN }}@${{ secrets.GET_URL }} target-repo
+
+      - name: Copy generated files to target repository
+        run: |
+          cp -f *.m3u target-repo/ 2>/dev/null || true
+          mkdir -p target-repo/script_api
+          cp -f script_api/data.json target-repo/script_api/ 2>/dev/null || true
+
+      - name: Commit and push to target repository
+        run: |
+          cd target-repo
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add .
+          git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
+          git pull --rebase origin HEAD || true
+          git push
