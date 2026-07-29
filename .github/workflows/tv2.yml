@@ -31,14 +31,17 @@ jobs:
           unzip -o -P "$ZIP_FILE" 2pm.zip -d 2pm
 
       - name: Run Python script
-        run: python3 2pm/2pm.py
+        run: |
+          python3 2pm/2pm.py
 
       - name: Repack ZIP
         env:
           ZIP_FILE: ${{ secrets.ZIP_FILE }}
         run: |
           rm -f 2pm.zip
-          zip -r -P "$ZIP_FILE" 2pm.zip 2pm
+          cd 2pm
+          zip -r -P "$ZIP_FILE" ../2pm.zip .
+          cd ..
 
       - name: Commit and push updated ZIP to source repository
         run: |
@@ -46,12 +49,12 @@ jobs:
           git config user.email "action@github.com"
           git add 2pm.zip
           git commit -m "Update protected ZIP [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No ZIP changes"
-          git pull --rebase origin "${GITHUB_REF_NAME}" || true
           git push
 
       - name: Cleanup temporary folder
         if: always()
-        run: rm -rf 2pm
+        run: |
+          rm -rf 2pm
 
       - name: Clone target repository
         run: |
@@ -61,7 +64,7 @@ jobs:
         run: |
           cp -f *.m3u target-repo/ 2>/dev/null || true
           mkdir -p target-repo/script_api
-          cp -f script_api/data.json target-repo/script_api/ 2>/dev/null || true
+          cp -f script_api/data.json target-repo/script_api/
 
       - name: Commit and push changes
         run: |
@@ -70,5 +73,4 @@ jobs:
           git config user.email "action@github.com"
           git add .
           git commit -m "Update playlists and api.json [$(date '+%Y-%m-%d %H:%M:%S')]" || echo "No changes to commit"
-          git pull --rebase origin HEAD || true
           git push
